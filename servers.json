@@ -61,5 +61,14 @@
     "default_schema": "dc",
     "default_index": "dc",
     "notes": "Norwegian academic libraries"
+  },
+  {
+    "id": "trove",
+    "name": "National Library of Australia (Trove)",
+    "url": "https://api.trove.nla.gov.au/v3/sru",
+    "version": "1.1",
+    "default_schema": "dc",
+    "default_index": "dc",
+    "notes": "Australian national library aggregator"
   }
 ]
