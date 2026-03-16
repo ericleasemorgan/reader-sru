@@ -240,6 +240,49 @@ async def sru_search_books(
 
 
 # ---------------------------------------------------------------------------
+# Tool: sru_scan
+# ---------------------------------------------------------------------------
+
+@mcp.tool(annotations={"readOnlyHint": True, "openWorldHint": True})
+async def sru_scan(
+    server: Annotated[str, _SERVER_URL_FIELD],
+    scan_clause: Annotated[str, Field(description="CQL index and term to scan, e.g. 'dc.title = moby'")],
+    max_terms: Annotated[
+        int,
+        Field(description="Maximum number of index terms to return (1–100)", ge=1, le=100),
+    ] = 20,
+    response_position: Annotated[
+        int,
+        Field(description="Position of the scan clause term within the returned list (1-based)", ge=1),
+    ] = 1,
+    username: Annotated[str | None, Field(description="Optional HTTP basic auth username")] = None,
+    password: Annotated[str | None, Field(description="Optional HTTP basic auth password")] = None,
+) -> str:
+    """Browse index terms near a given term on an SRU server (scan operation).
+
+    Returns a list of index terms and their record counts, which is useful
+    for exploring available values before running a full search.
+
+    Example: scan dc.title = "moby" to see title terms alphabetically near "moby".
+    """
+    try:
+        root = await sru.scan(
+            _resolve_url(server), scan_clause, max_terms, response_position,
+            username, password,
+        )
+        terms = sru.parse_scan_results(root)
+        if not terms:
+            return "No terms found."
+        lines = ["| Term | Count |", "|------|-------|"]
+        for t in terms:
+            count = t.get("count", "")
+            lines.append(f"| {t['term']} | {count} |")
+        return "\n".join(lines)
+    except sru.SRUError as exc:
+        return f"**Error:** {exc}"
+
+
+# ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
 

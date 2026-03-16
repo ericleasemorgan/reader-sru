@@ -190,6 +190,7 @@ async def scan(
     server_url: str,
     scan_clause: str,
     max_terms: int = 20,
+    response_position: int = 1,
     username: str | None = None,
     password: str | None = None,
 ) -> dict[str, Any]:
@@ -199,9 +200,31 @@ async def scan(
         "version": "1.1",
         "scanClause": scan_clause,
         "maximumTerms": str(max_terms),
+        "responsePosition": str(response_position),
     }
     data = await _get_xml(server_url, params, username, password)
     return _first(data, "zs:scanResponse", "scanResponse") or data
+
+
+def parse_scan_results(root: dict[str, Any]) -> list[dict[str, Any]]:
+    """Extract term list from a scan response.
+
+    Returns a list of dicts with 'term' and optional 'count' keys.
+    """
+    terms_node = _first(root, "zs:terms", "terms") or {}
+    term_list = _ensure_list(_first(terms_node, "zs:term", "term"))
+    results = []
+    for t in term_list:
+        value = _text(t, "zs:value", "value") or ""
+        count_raw = _text(t, "zs:numberOfRecords", "numberOfRecords")
+        entry: dict[str, Any] = {"term": value}
+        if count_raw is not None:
+            try:
+                entry["count"] = int(count_raw)
+            except ValueError:
+                entry["count"] = count_raw
+        results.append(entry)
+    return results
 
 
 # ---------------------------------------------------------------------------
