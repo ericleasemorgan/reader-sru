@@ -51,7 +51,7 @@ def _resolve_url(id_or_url: str) -> str:
 # ---------------------------------------------------------------------------
 
 @mcp.tool(annotations={"readOnlyHint": True})
-def sru_list_servers() -> str:
+def sru_list_servers() -> dict:
     """List all known SRU library catalog servers.
 
     Returns a table with ID, name, URL, default schema, and notes for each
@@ -64,7 +64,7 @@ def sru_list_servers() -> str:
             f"| {s['id']} | {s['name']} | {s['url']} "
             f"| {s['default_schema']} | {s['notes']} |"
         )
-    return "\n".join(lines)
+    return ( sru.SERVERS )
 
 
 # ---------------------------------------------------------------------------
@@ -180,65 +180,65 @@ async def sru_search(
 # Tool: sru_search_books
 # ---------------------------------------------------------------------------
 
-#@mcp.tool(annotations={"readOnlyHint": True, "openWorldHint": True})
-#async def sru_search_books(
-#    server: Annotated[str, _SERVER_URL_FIELD],
-#    title: Annotated[str | None, Field(description="Book title or partial title")] = None,
-#    author: Annotated[str | None, Field(description="Author name")] = None,
-#    isbn: Annotated[str | None, Field(description="ISBN (10 or 13 digits)")] = None,
-#    subject: Annotated[str | None, Field(description="Subject or topic keyword")] = None,
-#    publisher: Annotated[str | None, Field(description="Publisher name")] = None,
-#    year: Annotated[str | None, Field(description="Publication year (e.g., '2001')")] = None,
-#    keyword: Annotated[str | None, Field(description="General keyword search across all fields")] = None,
-#    max_records: Annotated[
-#        int,
-#        Field(description="Maximum number of records to return (1–100)", ge=1, le=100),
-#    ] = 10,
-#    start_record: Annotated[
-#        int,
-#        Field(description="1-based index of the first record to return (for pagination)", ge=1),
-#    ] = 1,
-#    record_schema: Annotated[
-#        str | None,
-#        Field(description="Record schema to request (e.g., 'dc', 'marcxml'). "
-#                          "Defaults to 'marcxml'."),
-#    ] = "marcxml",
-#) -> dict:
-#    """Search an SRU library catalog by common bibliographic fields.
-#
-#    Provide any combination of title, author, isbn, subject, publisher, year,
-#    or keyword. Multiple fields are AND-combined. At least one field is required.
-#
-#    Returns a markdown summary of matching records.
-#
-#    Example using the Library of Congress:
-#      server = "loc"
-#      title = "Moby Dick"
-#      author = "Melville"
-#    """
-#    try:
-#        cql = sru.build_cql(
-#            title=title,
-#            author=author,
-#            isbn=isbn,
-#            subject=subject,
-#            publisher=publisher,
-#            year=year,
-#            keyword=keyword,
-#        )
-#    except ValueError as exc:
-#        return f"**Error:** {exc}"
-#
-#    try:
-#        root = await sru.search_retrieve(
-#            _resolve_url(server), cql, max_records, start_record, record_schema,
-#        )
-#        results = sru.parse_search_results(root)
-#        md = sru.format_search_results_markdown(results)
-#        return results
-#       #return f"**Query:** `{cql}`\n\n{md}"
-#    except sru.SRUError as exc:
-#       return f"**Error:** {exc}"
+@mcp.tool(annotations={"readOnlyHint": True, "openWorldHint": True})
+async def sru_search_books(
+    server: Annotated[str, _SERVER_URL_FIELD],
+    title: Annotated[str | None, Field(description="Book title or partial title")] = None,
+    author: Annotated[str | None, Field(description="Author name")] = None,
+    isbn: Annotated[str | None, Field(description="ISBN (10 or 13 digits)")] = None,
+    subject: Annotated[str | None, Field(description="Subject or topic keyword")] = None,
+    publisher: Annotated[str | None, Field(description="Publisher name")] = None,
+    year: Annotated[str | None, Field(description="Publication year (e.g., '2001')")] = None,
+    keyword: Annotated[str | None, Field(description="General keyword search across all fields")] = None,
+    max_records: Annotated[
+        int,
+        Field(description="Maximum number of records to return (1–100)", ge=1, le=100),
+    ] = 10,
+    start_record: Annotated[
+        int,
+        Field(description="1-based index of the first record to return (for pagination)", ge=1),
+    ] = 1,
+    record_schema: Annotated[
+        str | None,
+        Field(description="Record schema to request (e.g., 'dc', 'marcxml'). "
+                          "Defaults to 'marcxml'."),
+    ] = "marcxml",
+) -> dict:
+    """Search an SRU library catalog by common bibliographic fields.
+
+    Provide any combination of title, author, isbn, subject, publisher, year,
+    or keyword. Multiple fields are AND-combined. At least one field is required.
+
+    Returns a markdown summary of matching records.
+
+    Example using the Library of Congress:
+      server = "loc"
+      title = "Moby Dick"
+      author = "Melville"
+    """
+    try:
+        cql = sru.build_cql(
+            title=title,
+            author=author,
+            isbn=isbn,
+            subject=subject,
+            publisher=publisher,
+            year=year,
+            keyword=keyword,
+        )
+    except ValueError as exc:
+        return f"**Error:** {exc}"
+
+    try:
+        root = await sru.search_retrieve(
+            _resolve_url(server), cql, max_records, start_record, record_schema,
+        )
+        results = sru.parse_search_results(root)
+        md = sru.format_search_results_markdown(results)
+        return results
+       #return f"**Query:** `{cql}`\n\n{md}"
+    except sru.SRUError as exc:
+       return f"**Error:** {exc}"
 
 
 # ---------------------------------------------------------------------------
