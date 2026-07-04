@@ -548,11 +548,13 @@ def format_search_results_markdown(results: dict) -> str:
         if rec.get("isbn"):
             lines.append(f"**ISBN:** {_join(rec['isbn'])}")
         if rec.get("subject"):
-            lines.append(f"**Subjects:** {'; '.join(_listify(rec['subject'])[:5])}")
+            lines.append(f"**Subjects:** {'; '.join(_listify(rec['subject'])[:8])}")
         if rec.get("language"):
             lines.append(f"**Language:** {rec['language']}")
         if rec.get("extent"):
             lines.append(f"**Extent:** {rec['extent']}")
+        if rec.get("urls"):
+            lines.append(f"**URLs:** {'; '.join(_listify(rec['urls'])[1:2])}")
         lines.append("")
     return "\n".join(lines)
 
