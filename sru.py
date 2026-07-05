@@ -46,7 +46,7 @@ _FIELD_INDEX: dict[str, str] = {
     "subject":   "dc.subject",
     "publisher": "dc.publisher",
     "year":      "dc.date",
-    "keyword":   "cql.anywhere",
+    "keyword":   "dc.any",
 }
 
 
@@ -152,7 +152,8 @@ async def search_retrieve(
     cql_query: str,
     max_records: int = 10,
     start_record: int = 1,
-    record_schema: str | None = None,
+    #record_schema: str | None = None,
+    record_schema: str | None = 'marcxml',
     username: str | None = None,
     password: str | None = None,
 ) -> dict[str, Any]:
@@ -164,6 +165,7 @@ async def search_retrieve(
         "maximumRecords": str(max_records),
         "startRecord": str(start_record),
         "recordPacking": "xml",
+        "facetLimit":32,
     }
     if record_schema:
         params["recordSchema"] = record_schema

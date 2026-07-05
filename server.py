@@ -50,6 +50,13 @@ def _resolve_url(id_or_url: str) -> str:
 # Tool: sru_list_servers
 # ---------------------------------------------------------------------------
 
+@mcp.tool()
+def get_URL( url:str ) -> str:
+	'''Given a URL pointing to an item in the Distant Reader stacks, get the plain text of the item'''
+
+	from requests import get
+	return( get( url ).text )
+
 @mcp.tool(annotations={"readOnlyHint": True})
 def sru_list_servers() -> dict:
     """List all known SRU library catalog servers.
@@ -125,8 +132,8 @@ async def sru_list_indexes(
 # Tool: sru_search
 # ---------------------------------------------------------------------------
 
-@mcp.tool(annotations={"readOnlyHint": True, "openWorldHint": True})
-async def sru_search(
+@mcp.tool(annotations={ "readOnlyHint": True, "openWorldHint": True } )
+async def search_CQL(
     server: Annotated[str, _SERVER_URL_FIELD],
     cql_query: Annotated[
         str,
@@ -181,7 +188,7 @@ async def sru_search(
 # ---------------------------------------------------------------------------
 
 @mcp.tool(annotations={"readOnlyHint": True, "openWorldHint": True})
-async def sru_search_books(
+async def search_words(
     server: Annotated[str, _SERVER_URL_FIELD],
     title: Annotated[str | None, Field(description="Book title or partial title")] = None,
     author: Annotated[str | None, Field(description="Author name")] = None,
