@@ -36,12 +36,12 @@ def _resolve_url(id_or_url: str) -> str:
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
-def get_URL( url:str ) -> str:
+def get_URL( url:str ) -> dict:
 
-	'''Given a URL pointing to an item in the Distant Reader stacks, get the plain text of the item'''
+	'''Given a URL pointing to an item in the Distant Reader stacks, get the plain text of the item. But be forewarned. Having and LLM evaluate a set of plain text with out a great deal of context can produce dubious results.'''
 
 	from requests import get
-	return( get( url ).text )
+	return( { 'note': 'Caution. Requesting an LLM to evaluate a bunch of plain text sans any context often results in dubious results. Be forwared.', "text": get( url ).text } )
 
 
 @mcp.tool(annotations={"readOnlyHint": True})
