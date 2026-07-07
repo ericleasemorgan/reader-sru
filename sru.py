@@ -13,18 +13,26 @@ from typing import Any
 import httpx
 import xmltodict
 
+SERVERS = [
+  {
+    "id": "Reader",
+    "name": "Distant Reader Index",
+    "url": "http://catalog.distantreader.org:2100/biblios",
+    "version": "2.0",
+    "default_schema": "marcxml",
+    "default_index": "dc",
+    "notes": "Etexts, articles, and other things from the Distant Reader collection"
+  },
+]
+
+
 
 # ---------------------------------------------------------------------------
 # Server registry  (loaded from servers.json next to this file)
 # ---------------------------------------------------------------------------
 
-_SERVERS_FILE = Path(__file__).parent / "servers.json"
-
-# List of all server records: [{id, name, url, version, default_schema, ...}]
-SERVERS: list[dict[str, str]] = json.loads(_SERVERS_FILE.read_text())
-
 # Convenience mapping: id → url  (kept for backwards-compat and tool descriptions)
-KNOWN_SERVERS: dict[str, str] = {s["id"]: s["url"] for s in SERVERS}
+KNOWN_SERVERS : dict[str, str] = {s["id"]: s["url"] for s in SERVERS}
 
 
 def get_server(id_or_url: str) -> dict[str, str] | None:
@@ -84,11 +92,10 @@ def build_cql(**fields: str | None) -> str:
 async def _get_xml(
     url: str,
     params: dict[str, str],
-    username: str | None = None,
-    password: str | None = None,
 ) -> dict[str, Any]:
     """Perform an HTTP GET and parse the XML response into a dict."""
-    auth = (username, password) if username and password else None
+    #auth = (username, password) if username and password else None
+    auth = None
     async with httpx.AsyncClient(auth=auth, timeout=30.0, follow_redirects=True) as client:
         try:
             response = await client.get(url, params=params)
@@ -132,18 +139,11 @@ class SRUError(Exception):
     """Raised for protocol-level or connectivity errors."""
 
 
-async def explain(
-    server_url: str,
-    username: str | None = None,
-    password: str | None = None,
-) -> dict[str, Any]:
+async def explain( server_url: str ) -> dict[ str, Any ]:
     """Execute an SRU explain request and return the parsed response dict."""
-    params = {
-        "operation": "explain",
-        "version": "1.1",
-        "recordPacking": "xml",
-    }
-    data = await _get_xml(server_url, params, username, password)
+
+    params = { "operation": "explain", "version": "1.1", "recordPacking": "xml" }
+    data = await _get_xml(server_url, params )
     return _first(data, "zs:explainResponse", "explainResponse") or data
 
 
@@ -170,7 +170,8 @@ async def search_retrieve(
     if record_schema:
         params["recordSchema"] = record_schema
 
-    data = await _get_xml(server_url, params, username, password)
+    #data = await _get_xml(server_url, params, username, password)
+    data = await _get_xml(server_url, params)
     root = _first(data, "zs:searchRetrieveResponse", "searchRetrieveResponse") or data
 
     # Surface diagnostic errors from the server
@@ -204,7 +205,8 @@ async def scan(
         "maximumTerms": str(max_terms),
         "responsePosition": str(response_position),
     }
-    data = await _get_xml(server_url, params, username, password)
+    #data = await _get_xml(server_url, params, username, password)
+    data = await _get_xml(server_url, params)
     return _first(data, "zs:scanResponse", "scanResponse") or data
 
 

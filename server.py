@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 """SRU MCP Server
 
 Provides tools for searching library catalogs via the SRU
@@ -10,39 +12,22 @@ Run:
   python server.py
 """
 
-from typing import Annotated
-
 from mcp.server.fastmcp import FastMCP
-from pydantic import Field
-
+from pydantic           import Field
+from typing             import Annotated
 import sru
 
 # Build a compact server list string for tool descriptions
-_SERVER_HINT = ", ".join(
-    f"{s['id']} ({s['name']})" for s in sru.SERVERS
-)
-_SERVER_URL_FIELD = Field(
-    description=(
-        "URL or ID of the SRU server. "
-        f"Known IDs: {', '.join(sru.KNOWN_SERVERS)}. "
-        "Use sru_list_servers to see full details, or pass any SRU server URL."
-    )
-)
+_SERVER_HINT = ", ".join( f"{s['id']} ({s['name']})" for s in sru.SERVERS )
 
-mcp = FastMCP(
-    "sru_mcp",
-    instructions=(
-        "Search library catalogs using the SRU (Search/Retrieve via URL) protocol. "
-        "Use sru_list_servers to discover available servers, sru_explain to inspect "
-        "a server's capabilities, sru_search_books for simple field-based searches, "
-        f"or sru_search for raw CQL queries. Available servers: {_SERVER_HINT}."
-    ),
-)
+_SERVER_URL_FIELD = Field( description=( "URL or ID of the SRU server. " f"Known IDs: {', '.join(sru.KNOWN_SERVERS)}. " "Use sru_list_servers to see full details, or pass any SRU server URL." ) )
+
+mcp = FastMCP( "sru_mcp", instructions=(  "Search library catalogs using the SRU (Search/Retrieve via URL) protocol. " "Use sru_list_servers to discover available servers, sru_explain to inspect " "a server's capabilities, sru_search_books for simple field-based searches, " f"or sru_search for raw CQL queries. Available servers: {_SERVER_HINT}." ), )
 
 
 def _resolve_url(id_or_url: str) -> str:
     """Resolve a server ID to its URL, or return the input unchanged if it's already a URL."""
-    server = sru.get_server(id_or_url)
+    server = sru.get_server(id_or_url)    
     return server["url"] if server else id_or_url
 
 
@@ -52,10 +37,12 @@ def _resolve_url(id_or_url: str) -> str:
 
 @mcp.tool()
 def get_URL( url:str ) -> str:
+
 	'''Given a URL pointing to an item in the Distant Reader stacks, get the plain text of the item'''
 
 	from requests import get
 	return( get( url ).text )
+
 
 @mcp.tool(annotations={"readOnlyHint": True})
 def sru_list_servers() -> dict:
@@ -67,9 +54,12 @@ def sru_list_servers() -> dict:
     lines = ["| ID | Name | URL | Schema | Notes |",
              "|----|------|-----|--------|-------|"]
     for s in sru.SERVERS:
+    
         lines.append(
+        
             f"| {s['id']} | {s['name']} | {s['url']} "
-            f"| {s['default_schema']} | {s['notes']} |"
+            f"| {s['default_schema']}   | {s['notes']} |"
+        
         )
     return ( sru.SERVERS )
 
@@ -79,11 +69,7 @@ def sru_list_servers() -> dict:
 # ---------------------------------------------------------------------------
 
 @mcp.tool(annotations={"readOnlyHint": True, "openWorldHint": True})
-async def sru_explain(
-    server: Annotated[str, _SERVER_URL_FIELD],
-    username: Annotated[str | None, Field(description="Optional HTTP basic auth username")] = None,
-    password: Annotated[str | None, Field(description="Optional HTTP basic auth password")] = None,
-) -> str:
+async def sru_explain( server: Annotated[ str, _SERVER_URL_FIELD ] ) -> dict :
     """Get capabilities of an SRU server: title, supported record schemas,
     server defaults, and a summary of available indexes.
 
@@ -91,11 +77,10 @@ async def sru_explain(
     supports. Follow up with sru_list_indexes for a detailed index table.
     """
     try:
-        root = await sru.explain(_resolve_url(server), username, password)
+        root = await sru.explain(_resolve_url(server) )
         info = sru.parse_explain(root)
         return sru.format_explain_markdown(info)
-    except sru.SRUError as exc:
-        return f"**Error:** {exc}"
+    except sru.SRUError as exc: return f"**Error:** {exc}"
 
 
 # ---------------------------------------------------------------------------
@@ -109,8 +94,6 @@ async def sru_list_indexes(
         str | None,
         Field(description="Optional text to filter index names or titles (case-insensitive)"),
     ] = None,
-    username: Annotated[str | None, Field(description="Optional HTTP basic auth username")] = None,
-    password: Annotated[str | None, Field(description="Optional HTTP basic auth password")] = None,
 ) -> str:
     """List all search indexes available on an SRU server.
 
@@ -121,7 +104,7 @@ async def sru_list_indexes(
     to sru_search (e.g., 'dc.title = "Hamlet"').
     """
     try:
-        root = await sru.explain(_resolve_url(server), username, password)
+        root = await sru.explain(_resolve_url(server) )
         info = sru.parse_explain(root)
         return sru.format_indexes_markdown(info["indexes"], filter_text)
     except sru.SRUError as exc:
@@ -134,7 +117,7 @@ async def sru_list_indexes(
 
 @mcp.tool(annotations={ "readOnlyHint": True, "openWorldHint": True } )
 async def search_CQL(
-    server: Annotated[str, _SERVER_URL_FIELD],
+    server: Annotated[str, _SERVER_URL_FIELD ],
     cql_query: Annotated[
         str,
         Field(
@@ -178,7 +161,6 @@ async def search_CQL(
         )
         results = sru.parse_search_results(root)
         return results
-        #return sru.format_search_results_markdown(results)
     except sru.SRUError as exc:
         return f"**Error:** {exc}"
 
@@ -243,7 +225,6 @@ async def search_words(
         results = sru.parse_search_results(root)
         md = sru.format_search_results_markdown(results)
         return results
-       #return f"**Query:** `{cql}`\n\n{md}"
     except sru.SRUError as exc:
        return f"**Error:** {exc}"
 
@@ -264,8 +245,6 @@ async def sru_scan(
         int,
         Field(description="Position of the scan clause term within the returned list (1-based)", ge=1),
     ] = 1,
-    username: Annotated[str | None, Field(description="Optional HTTP basic auth username")] = None,
-    password: Annotated[str | None, Field(description="Optional HTTP basic auth password")] = None,
 ) -> str:
     """Browse index terms near a given term on an SRU server (scan operation).
 
@@ -275,10 +254,7 @@ async def sru_scan(
     Example: scan dc.title = "moby" to see title terms alphabetically near "moby".
     """
     try:
-        root = await sru.scan(
-            _resolve_url(server), scan_clause, max_terms, response_position,
-            username, password,
-        )
+        root = await sru.scan(_resolve_url(server), scan_clause, max_terms, response_position )
         terms = sru.parse_scan_results(root)
         if not terms:
             return "No terms found."
