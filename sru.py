@@ -113,7 +113,7 @@ async def _get_xml(
         except httpx.RequestError as exc:
             raise SRUError(
                 f"Could not reach SRU server at {url}: {exc}. "
-                f"Try a known server like 'loc' ({KNOWN_SERVERS['loc']})."
+                f"Try a known server like 'reader' ({KNOWN_SERVERS['reader']})."
             )
         content_type = response.headers.get("content-type", "")
         text = response.text

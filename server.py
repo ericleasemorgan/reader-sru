@@ -1,120 +1,77 @@
 #!/usr/bin/env python
 
-"""SRU MCP Server
+# server.py - an MCP server used to query the Distant Reader Catalog via SRU
+# forked from https://github.com/codefzer/sru-mcp; Thanks Sam Codefzer!
 
-Provides tools for searching library catalogs via the SRU
-(Search/Retrieve via URL) protocol.
+# Eric Lease Morgan <eric_morgan@infomotions.com>
+# (c) Infomotions, LLC; distributed under a GNU Public License
 
-Servers are configured in servers.json. Use sru_list_servers to see all
-available servers, or pass any SRU server URL directly.
+# July 9, 2026 - first documentation but been hacking on it for couple of weeks
 
-Run:
-  python server.py
-"""
 
+# require
 from mcp.server.fastmcp import FastMCP
 from pydantic           import Field
+from requests           import get
 from typing             import Annotated
 import sru
 
 # Build a compact server list string for tool descriptions
-_SERVER_HINT = ", ".join( f"{s['id']} ({s['name']})" for s in sru.SERVERS )
-
+_SERVER_HINT      = ", ".join( f"{s['id']} ({s['name']})" for s in sru.SERVERS )
 _SERVER_URL_FIELD = Field( description=( "URL or ID of the SRU server. " f"Known IDs: {', '.join(sru.KNOWN_SERVERS)}. " "Use sru_list_servers to see full details, or pass any SRU server URL." ) )
-
 mcp = FastMCP( "sru_mcp", instructions=(  "Search library catalogs using the SRU (Search/Retrieve via URL) protocol. " "Use sru_list_servers to discover available servers, sru_explain to inspect " "a server's capabilities, sru_search_books for simple field-based searches, " f"or sru_search for raw CQL queries. Available servers: {_SERVER_HINT}." ), )
 
-
-def _resolve_url(id_or_url: str) -> str:
+def _resolve_url(id_or_url: str) -> str :
     """Resolve a server ID to its URL, or return the input unchanged if it's already a URL."""
     server = sru.get_server(id_or_url)    
     return server["url"] if server else id_or_url
 
+def main() -> None : mcp.run( transport="stdio" )
 
-# ---------------------------------------------------------------------------
-# Tool: sru_list_servers
-# ---------------------------------------------------------------------------
 
+# get url
 @mcp.tool()
 def get_URL( url:str ) -> dict:
+	'''Given a URL pointing to an item in the Distant Reader stacks, get a cautionary note and the plain text of an item from the Distant Reader stacks. Pay attention to any cautionary notes returned by this operation. Be forewarned. Having an LLM evaluate a set of plain text without a great deal of context ma produce dubious results.'''
 
-	'''Given a URL pointing to an item in the Distant Reader stacks, get the plain text of the item. But be forewarned. Having and LLM evaluate a set of plain text with out a great deal of context can produce dubious results.'''
-
-	from requests import get
-	return( { 'note': 'Caution. Requesting an LLM to evaluate a bunch of plain text sans any context often results in dubious results. Be forwared.', "text": get( url ).text } )
+	return( { 'caution': 'Requesting an LLM to evaluate a plain text document sans any context often results in dubious results. Be forwared.', "text": get( url ).text } )
 
 
+# list servers
 @mcp.tool(annotations={"readOnlyHint": True})
-def sru_list_servers() -> dict:
-    """List all known SRU library catalog servers.
-
-    Returns a table with ID, name, URL, default schema, and notes for each
-    server. Pass the ID or URL to other sru_* tools.
-    """
-    lines = ["| ID | Name | URL | Schema | Notes |",
-             "|----|------|-----|--------|-------|"]
-    for s in sru.SERVERS:
+def list_servers() -> dict:
+    '''Return a list of all the SRU servers available from this system. There ought to be only one, the Distant Reader Index at http://catalog.distantreader.org:2100/biblios'''
     
-        lines.append(
-        
-            f"| {s['id']} | {s['name']} | {s['url']} "
-            f"| {s['default_schema']}   | {s['notes']} |"
-        
-        )
     return ( sru.SERVERS )
 
 
-# ---------------------------------------------------------------------------
-# Tool: sru_explain
-# ---------------------------------------------------------------------------
-
+# explain
 @mcp.tool(annotations={"readOnlyHint": True, "openWorldHint": True})
-async def sru_explain( server: Annotated[ str, _SERVER_URL_FIELD ] ) -> dict :
-    """Get capabilities of an SRU server: title, supported record schemas,
-    server defaults, and a summary of available indexes.
+async def explain( server: Annotated[ str, _SERVER_URL_FIELD ] ) -> dict :
+    '''Given the name of a server, request the server's explain operation and return the explain response. This is useful for understanding the basic functionality of the server.'''
 
-    Use this before searching to discover what indexes and schemas the server
-    supports. Follow up with sru_list_indexes for a detailed index table.
-    """
-    try:
-        root = await sru.explain(_resolve_url(server) )
-        info = sru.parse_explain(root)
-        return sru.format_explain_markdown(info)
-    except sru.SRUError as exc: return f"**Error:** {exc}"
+    try :
+    
+        explanation = await sru.explain( _resolve_url( server ) )
+        return ( sru.parse_explain( explanation ) )
+ 
+    except sru.SRUError as exc : return f"**Error:** {exc}"
 
 
-# ---------------------------------------------------------------------------
-# Tool: sru_list_indexes
-# ---------------------------------------------------------------------------
+# list indexes
+@mcp.tool( annotations={ "readOnlyHint": True, "openWorldHint": True } )
+async def list_indexes( server: Annotated[ str, _SERVER_URL_FIELD ] ) -> dict:
+    '''Given the name of a server, extract the indexes the server supports in order to how CQL queries can be applied to it.'''
 
-@mcp.tool(annotations={"readOnlyHint": True, "openWorldHint": True})
-async def sru_list_indexes(
-    server: Annotated[str, _SERVER_URL_FIELD],
-    filter_text: Annotated[
-        str | None,
-        Field(description="Optional text to filter index names or titles (case-insensitive)"),
-    ] = None,
-) -> str:
-    """List all search indexes available on an SRU server.
+    try :
+    
+        explanation = await sru.explain(_resolve_url( server ) )
+        return( sru.parse_explain( explanation )[ 'indexes' ] )
 
-    Returns a markdown table with context set, index name, and title.
-    Use filter_text to narrow results (e.g., 'title', 'author', 'subject').
-
-    Index names from this table can be used directly in CQL queries passed
-    to sru_search (e.g., 'dc.title = "Hamlet"').
-    """
-    try:
-        root = await sru.explain(_resolve_url(server) )
-        info = sru.parse_explain(root)
-        return sru.format_indexes_markdown(info["indexes"], filter_text)
-    except sru.SRUError as exc:
-        return f"**Error:** {exc}"
+    except sru.SRUError as exc : return f"**Error:** {exc}"
 
 
-# ---------------------------------------------------------------------------
-# Tool: sru_search
-# ---------------------------------------------------------------------------
-
+# search via CQL
 @mcp.tool(annotations={ "readOnlyHint": True, "openWorldHint": True } )
 async def search_CQL(
     server: Annotated[str, _SERVER_URL_FIELD ],
@@ -143,8 +100,6 @@ async def search_CQL(
         Field(description="Record schema to request (e.g., 'dc', 'marcxml', 'mods'). "
                           "Defaults to 'marcxml'. Use sru_explain to see supported schemas."),
     ] = "marcxml",
-    username: Annotated[str | None, Field(description="Optional HTTP basic auth username")] = None,
-    password: Annotated[str | None, Field(description="Optional HTTP basic auth password")] = None,
 ) -> dict:
     """Execute a raw CQL query against an SRU server and return matching records.
 
@@ -155,14 +110,10 @@ async def search_CQL(
     The response includes the total number of matching records.
     """
     try:
-        root = await sru.search_retrieve(
-            _resolve_url(server), cql_query, max_records, start_record,
-            record_schema, username, password,
-        )
-        results = sru.parse_search_results(root)
-        return results
-    except sru.SRUError as exc:
-        return f"**Error:** {exc}"
+        results = await sru.search_retrieve( _resolve_url( server ), cql_query, max_records, start_record, record_schema )
+        return ( sru.parse_search_results( results ) )
+
+    except sru.SRUError as exc: return f"**Error:** {exc}"
 
 
 # ---------------------------------------------------------------------------
@@ -170,7 +121,7 @@ async def search_CQL(
 # ---------------------------------------------------------------------------
 
 @mcp.tool(annotations={"readOnlyHint": True, "openWorldHint": True})
-async def search_words(
+async def search_keywords(
     server: Annotated[str, _SERVER_URL_FIELD],
     title: Annotated[str | None, Field(description="Book title or partial title")] = None,
     author: Annotated[str | None, Field(description="Author name")] = None,
@@ -229,10 +180,7 @@ async def search_words(
        return f"**Error:** {exc}"
 
 
-# ---------------------------------------------------------------------------
-# Tool: sru_scan
-# ---------------------------------------------------------------------------
-
+# scan an index, but the Reader does not support the scan operation
 @mcp.tool(annotations={"readOnlyHint": True, "openWorldHint": True})
 async def sru_scan(
     server: Annotated[str, _SERVER_URL_FIELD],
@@ -267,13 +215,5 @@ async def sru_scan(
         return f"**Error:** {exc}"
 
 
-# ---------------------------------------------------------------------------
-# Entry point
-# ---------------------------------------------------------------------------
-
-def main() -> None:
-    mcp.run(transport="stdio")
-
-
-if __name__ == "__main__":
-    main()
+# on our mark, get set, go!
+if __name__ == "__main__" : main()
