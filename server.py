@@ -174,7 +174,7 @@ async def search_keywords(
             _resolve_url(server), cql, max_records, start_record, record_schema,
         )
         results = sru.parse_search_results(root)
-        md = sru.format_search_results_markdown(results)
+        #md = sru.format_search_results_markdown(results)
         return results
     except sru.SRUError as exc:
        return f"**Error:** {exc}"

@@ -154,23 +154,19 @@ async def search_retrieve(
     start_record: int = 1,
     #record_schema: str | None = None,
     record_schema: str | None = 'marcxml',
-    username: str | None = None,
-    password: str | None = None,
 ) -> dict[str, Any]:
     """Execute an SRU searchRetrieve request and return the parsed response."""
     params: dict[str, str] = {
         "operation": "searchRetrieve",
-        "version": "1.1",
+        "version": "2.0",
         "query": cql_query,
         "maximumRecords": str(max_records),
         "startRecord": str(start_record),
         "recordPacking": "xml",
-        "facetLimit":32,
+        "facetLimit":'32',
     }
-    if record_schema:
-        params["recordSchema"] = record_schema
+    if record_schema: params["recordSchema"] = record_schema
 
-    #data = await _get_xml(server_url, params, username, password)
     data = await _get_xml(server_url, params)
     root = _first(data, "zs:searchRetrieveResponse", "searchRetrieveResponse") or data
 
@@ -321,10 +317,15 @@ def parse_search_results(root: dict[str, Any]) -> dict[str, Any]:
         record_data = _first(rec, "zs:recordData", "recordData") or {}
         parsed.append(_parse_record_data(record_data, schema))
 
+    facets_block = _first(root, "zs:facetedResults", "facetedResults") or {}
+    raw_facets = _first(facets_block, "fr:facet", "facet") or []
+    if isinstance( raw_facets, dict ) : raw_facets = [raw_facets]
+
     return {
         "total": total,
         "next_position": next_position,
         "records": parsed,
+        'facets': raw_facets
     }
 
 
