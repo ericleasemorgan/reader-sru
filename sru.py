@@ -142,7 +142,7 @@ class SRUError(Exception):
 async def explain( server_url: str ) -> dict[ str, Any ]:
     """Execute an SRU explain request and return the parsed response dict."""
 
-    params = { "operation": "explain", "version": "1.1", "recordPacking": "xml" }
+    params = { "operation": "explain", "version": "2.0", "recordPacking": "xml" }
     data = await _get_xml(server_url, params )
     return _first(data, "zs:explainResponse", "explainResponse") or data
 
@@ -248,6 +248,8 @@ def parse_explain(root: dict[str, Any]) -> dict[str, Any]:
 
     title = _text(db_info, "title") or "Unknown"
     description = _text(db_info, "description") or ""
+    author = _text(db_info, "author") or ""
+    contact = _text(db_info, "contact") or ""
 
     schemas: list[dict] = []
     for s in _ensure_list(schema_info.get("schema")):
@@ -265,11 +267,14 @@ def parse_explain(root: dict[str, Any]) -> dict[str, Any]:
             defaults[dtype] = str(val)
 
     return {
+        "author": author,
+        "contact": contact,
         "title": title,
         "description": description,
         "schemas": schemas,
         "defaults": defaults,
-        "indexes": _parse_indexes(index_info),
+        #"indexes": _parse_indexes(index_info),
+        "indexes": index_info,
     }
 
 
@@ -323,9 +328,9 @@ def parse_search_results(root: dict[str, Any]) -> dict[str, Any]:
 
     return {
         "total": total,
+        'facets': raw_facets,
         "next_position": next_position,
         "records": parsed,
-        'facets': raw_facets
     }
 
 
@@ -335,13 +340,13 @@ def _parse_record_data(record_data: dict | str, schema: str) -> dict:
         return {"raw": record_data, "schema": schema}
 
     # Try Dublin Core (various namespace prefixes)
-    dc = (
-        record_data.get("srw_dc:dc")
-        or record_data.get("oai_dc:dc")
-        or record_data.get("dc")
-    )
-    if dc:
-        return _parse_dublin_core(dc, schema)
+    #dc = (
+    #    record_data.get("srw_dc:dc")
+    #    or record_data.get("oai_dc:dc")
+    #    or record_data.get("dc")
+    #)
+    #if dc:
+    #    return _parse_dublin_core(dc, schema)
 
     # Try MARCXML — xmltodict force_list may produce a list for "record"
     marc_raw = record_data.get("record") or record_data.get("marc:record")
