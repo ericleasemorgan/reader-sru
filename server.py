@@ -32,9 +32,10 @@ import sru
 _SERVER_HINT      = ", ".join( f"{s['id']} ({s['name']})" for s in sru.SERVERS )
 _SERVER_URL_FIELD = Field( description=( "URL or ID of the SRU server. " f"Known IDs: {', '.join(sru.KNOWN_SERVERS)}. " "Use sru_list_servers to see full details, or pass any SRU server URL." ) )
 mcp = FastMCP( "sru_mcp", instructions=(  "Search library catalogs using the SRU (Search/Retrieve via URL) protocol. " "Use sru_list_servers to discover available servers, sru_explain to inspect " "a server's capabilities, sru_search_books for simple field-based searches, " f"or sru_search for raw CQL queries. Available servers: {_SERVER_HINT}." ), )
-HTML    = 'sru-results.html'
-#JSON    = 'sru-results.json'
-CACHE   = 'cache'
+HTML     = 'sru-results.htm'
+CSV      = 'sru-results.csv'
+JSON     = 'sru-results.json'
+CACHE    = 'cache'
 METADATA = 'metadata.csv'
 COLUMNS  = [ 'author', 'title', 'date', 'url', 'file' ]
 
@@ -57,6 +58,20 @@ def save_HTML( content: str ) -> str:
     try:
         with open( html, "w", encoding="utf-8") as handle : handle.write( content )
         return f"Successfully wrote {len(content)} characters to file://{html}"
+    
+    # alas
+    except Exception as error : return f"Error: {error}"
+
+
+@mcp.tool()
+def save_CSV( content: str ) -> str:
+    '''Save the complete, paginated search results as a CSV file with columns for author, title, date, and url (Distant Reader stacks URL). Escape commas when necessary.'''
+    
+    # try to do the work
+    csv = Path.cwd()/CSV
+    try:
+        with open( csv, "w", encoding="utf-8") as handle : handle.write( content )
+        return f"Successfully wrote {len(content)} characters to file://{csv}"
     
     # alas
     except Exception as error : return f"Error: {error}"
@@ -213,89 +228,91 @@ async def search_CQL(
 #          if (urls := record.get( "urls", [] ) ) : url = urls[1]
 #          #results.append( Item(author=author,title=title, date=date, url=url) )
 #          results.append( { 'author':author,'title':title, 'date':date, 'url':url } )
-#        with open( JSON, "w", encoding="utf-8") as handle : dump( results, handle )
-#        return f"Successfully wrote {len(results)} characters to file://{JSON}"
+#        
+#        json = Path.cwd()/JSON
+#        with open( json, "w", encoding="utf-8") as handle : dump( results, handle )
+#        return f"Successfully wrote {len(results)} characters to file://{json}"
 #    except sru.SRUError as exc: return f"**Error:** {exc}"
 
 
 # search via CQL
-@mcp.tool(annotations={ "readOnlyHint": True, "openWorldHint": True } )
-async def search_CQL_to_CACHE(
-    server: Annotated[str, _SERVER_URL_FIELD ],
-    cql_query: Annotated[
-        str,
-        Field(
-            description=(
-                "CQL (Contextual Query Language) query string. "
-                'Examples: \'dc.title = "Moby Dick"\', '
-                '\'dc.creator = "Melville" AND dc.date = "1851"\', '
-                '\'bath.isbn = "9780142437247"\'. '
-                "Use sru_list_indexes to discover available index names."
-            )
-        ),
-    ],
-    max_records: Annotated[
-        int,
-        Field(description="Maximum number of records to return (1–128)", ge=1, le=128),
-    ] = 128,
-    start_record: Annotated[
-        int,
-        Field(description="1-based index of the first record to return (for pagination)", ge=1),
-    ] = 1,
-    record_schema: Annotated[
-        str | None,
-        Field(description="Record schema to request (e.g., 'dc', 'marcxml', 'mods'). "
-                          "Defaults to 'marcxml'. Use sru_explain to see supported schemas."),
-    ] = "marcxml",
-) -> str :
-    """Execute a raw CQL query against an SRU server and return matching records.
-
-    Returns a markdown summary of results including title, author, publisher,
-    year, ISBN, subjects, and language for each record.
-
-    For pagination, increment start_record by max_records on each call.
-    The response includes the total number of matching records.
-    """
-    try:
-        results = await sru.search_retrieve( _resolve_url( server ), cql_query, max_records, start_record, record_schema )
-        records =  sru.parse_search_results( results )[ 'records' ]
-        results = []
-        for record in records :
-          author = ''
-          url = ''
-          if (authors := record.get( "author", [] ) ) : author = authors[0]
-          title = record.get( 'title', '')
-          date = record.get( 'year', '')
-          if (urls := record.get( "urls", [] ) ) : url = urls[1]
-          #results.append( Item(author=author,title=title, date=date, url=url) )
-          results.append( { 'author':author,'title':title, 'date':date, 'url':url } )
-
-        # initialize
-        cache = Path.cwd()/CACHE
-        cache.mkdir( exist_ok=True )
-
-        metadata = []
-        for record in results :
-
-          # parse
-          author = record[ 'author' ]
-          title  = record[ 'title' ]
-          date   = record[ 'date' ]
-          url    = record[ 'url' ]
-          file   = url.split( '/' )[ -1 ]
-
-          # get the given item; could use error-checking
-          response = get( url )
-          with open( cache/file, 'wb' ) as handle : handle.write( response.content )
-
-          # update
-          metadata.append( [ author, title, date, url, file ] )
-
-        # create a dataframe, output, and done
-        metadata = DataFrame( metadata, columns=COLUMNS )
-        with open( cache/METADATA, 'w' ) as handle : handle.write( metadata.to_csv( index=False ) )
-        return f"Successfully cache {len(records)} to file://{cache}"
-    except sru.SRUError as exc: return f"**Error:** {exc}"
+#@mcp.tool(annotations={ "readOnlyHint": True, "openWorldHint": True } )
+#async def search_CQL_to_CACHE(
+#    server: Annotated[str, _SERVER_URL_FIELD ],
+#    cql_query: Annotated[
+#        str,
+#        Field(
+#            description=(
+#                "CQL (Contextual Query Language) query string. "
+#                'Examples: \'dc.title = "Moby Dick"\', '
+#                '\'dc.creator = "Melville" AND dc.date = "1851"\', '
+#                '\'bath.isbn = "9780142437247"\'. '
+#                "Use sru_list_indexes to discover available index names."
+#            )
+#        ),
+#    ],
+#    max_records: Annotated[
+#        int,
+#       Field(description="Maximum number of records to return (1–128)", ge=1, le=128),
+#    ] = 128,
+#    start_record: Annotated[
+#        int,
+#        Field(description="1-based index of the first record to return (for pagination)", ge=1),
+#    ] = 1,
+#    record_schema: Annotated[
+#        str | None,
+#        Field(description="Record schema to request (e.g., 'dc', 'marcxml', 'mods'). "
+#                          "Defaults to 'marcxml'. Use sru_explain to see supported schemas."),
+#    ] = "marcxml",
+#) -> str :
+#    """Execute a raw CQL query against an SRU server and return matching records.
+#
+#    Returns a markdown summary of results including title, author, publisher,
+#    year, ISBN, subjects, and language for each record.
+#
+#    For pagination, increment start_record by max_records on each call.
+#    The response includes the total number of matching records.
+#    """
+#    try:
+#        results = await sru.search_retrieve( _resolve_url( server ), cql_query, max_records, start_record, record_schema )
+#        records =  sru.parse_search_results( results )[ 'records' ]
+#        results = []
+#        for record in records :
+#          author = ''
+#          url = ''
+#          if (authors := record.get( "author", [] ) ) : author = authors[0]
+#          title = record.get( 'title', '')
+#          date = record.get( 'year', '')
+#          if (urls := record.get( "urls", [] ) ) : url = urls[1]
+#          #results.append( Item(author=author,title=title, date=date, url=url) )
+#          results.append( { 'author':author,'title':title, 'date':date, 'url':url } )
+#
+#        # initialize
+#        cache = Path.cwd()/CACHE
+#        cache.mkdir( exist_ok=True )
+#
+#        metadata = []
+#        for record in results :
+#
+#          # parse
+#          author = record[ 'author' ]
+#          title  = record[ 'title' ]
+#          date   = record[ 'date' ]
+#          url    = record[ 'url' ]
+#          file   = url.split( '/' )[ -1 ]
+#
+#          # get the given item; could use error-checking
+#          response = get( url )
+#          with open( cache/file, 'wb' ) as handle : handle.write( response.content )
+#
+#          # update
+#          metadata.append( [ author, title, date, url, file ] )
+#
+#        # create a dataframe, output, and done
+#        metadata = DataFrame( metadata, columns=COLUMNS )
+#        with open( cache/METADATA, 'w' ) as handle : handle.write( metadata.to_csv( index=False ) )
+#        return f"Successfully cache {len(records)} to file://{cache}"
+#    except sru.SRUError as exc: return f"**Error:** {exc}"
 
 
 # ---------------------------------------------------------------------------
