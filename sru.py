@@ -20,8 +20,8 @@ SERVERS = [
     "url": "http://catalog.distantreader.org:2100/biblios",
     "version": "2.0",
     "default_schema": "marcxml",
-    "default_index": "dc",
-    "notes": "Etexts, articles, and other things from the Distant Reader collection"
+    "default_index": "marcxml",
+    "notes": "An index of etexts and articles from the Distant Reader collection"
   },
 ]
 

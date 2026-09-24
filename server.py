@@ -65,7 +65,7 @@ def save_HTML( content: str ) -> str:
 
 @mcp.tool()
 def save_CSV( content: str ) -> str:
-    '''Save the complete, paginated search results as a CSV file with columns for author, title, date, and url (Distant Reader stacks URL). Escape commas when necessary.'''
+    '''Save the complete, paginated search results as a CSV file with columns for author, title, date, and url (Distant Reader stacks URL). Escape commas when necessary, even the URL column.'''
     
     # try to do the work
     csv = Path.cwd()/CSV
