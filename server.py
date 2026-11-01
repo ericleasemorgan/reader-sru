@@ -6,13 +6,14 @@
 # Eric Lease Morgan <eric_morgan@infomotions.com>
 # (c) Infomotions, LLC; distributed under a GNU Public License
 
-# July  9, 2026 - first documentation but been hacking on it for couple of weeks
-# July 14, 2026 - added facets (cool!), save html or json, and cache file; at the cabin
+# July  9, 2026    - first documentation but been hacking on it for couple of weeks
+# July 14, 2026    - added facets (cool!), save html or json, and cache file; at the cabin
+# November 1, 2026 - migrated to mcp.server.mcpserver
 
 
 # require
 from json               import dump, load
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 from pandas             import DataFrame
 from pathlib            import Path
 from pydantic           import Field, BaseModel
@@ -31,7 +32,7 @@ import sru
 # Build a compact server list string for tool descriptions
 _SERVER_HINT      = ", ".join( f"{s['id']} ({s['name']})" for s in sru.SERVERS )
 _SERVER_URL_FIELD = Field( description=( "URL or ID of the SRU server. " f"Known IDs: {', '.join(sru.KNOWN_SERVERS)}. " "Use sru_list_servers to see full details, or pass any SRU server URL." ) )
-mcp = FastMCP( "sru_mcp", instructions=(  "Search library catalogs using the SRU (Search/Retrieve via URL) protocol. " "Use sru_list_servers to discover available servers, sru_explain to inspect " "a server's capabilities, sru_search_books for simple field-based searches, " f"or sru_search for raw CQL queries. Available servers: {_SERVER_HINT}." ), )
+mcp = MCPServer( "sru_mcp", instructions=(  "Search library catalogs using the SRU (Search/Retrieve via URL) protocol. " "Use sru_list_servers to discover available servers, sru_explain to inspect " "a server's capabilities, sru_search_books for simple field-based searches, " f"or sru_search for raw CQL queries. Available servers: {_SERVER_HINT}." ), )
 HTML     = 'sru-results.htm'
 CSV      = 'sru-results.csv'
 JSON     = 'sru-results.json'
