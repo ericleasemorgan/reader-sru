@@ -4,54 +4,40 @@ This is an MCP (Model Context Protocol) server used to search the Distant Reader
 
 There is a Web-based interface to the Reader's catalog ([http://index.distantreader.org](http://index.distantreader.org)), but in the long run, this MCP server is more functional than the Web-based interface.
 
-## Features
 
-- **5 tools** for LLM-driven bibliographic search
-- **7 pre-configured servers** including Library of Congress, BnF, DNB, and more
-- Parses **MARCXML** and **Dublin Core** record formats
-- Supports any SRU-compliant server — pass a URL or use a built-in server ID
-- Raw CQL queries or high-level field-based search (title, author, ISBN, subject, etc.)
+## Install
 
-## Quick Start
-
-### Install
+First download the distribution, change directories to the distribution's root, and install the requirements:
 
 ```bash
-pip install mcp[cli] httpx xmltodict
+pip install -r requirements.txt
 ```
 
-### Run
+## Using the server
+
+To use the server you need to integrate it with your agent software. I use [ollmcp](https://github.com/jonigl/mcp-client-for-ollama) as my agent, and I can use the server by running the following command:
 
 ```bash
-python server.py
+ollmcp -s /path/to/reader-sru/server.py
 ```
 
-### Claude Desktop
-
-Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_desktop_config.json`):
+Many people use Claude as their agent. If you do too, then open your Claude desktop config file (claude_desktop_config.json), and add an MCP server record. For example:
 
 ```json
 {
   "mcpServers": {
-    "sru": {
+    "reader-sru": {
       "command": "python",
-      "args": ["/path/to/sru-mcp/server.py"]
+      "args": ["/path/to/reader-sru/server.py"]
     }
   }
 }
 ```
 
-## Tools
+(There has got to be an easier way!)
 
-| Tool | Description |
-|------|-------------|
-| `sru_list_servers` | List all pre-configured library catalog servers |
-| `sru_explain` | Get a server's capabilities, supported schemas, and indexes |
-| `sru_list_indexes` | List available search indexes on a server |
-| `sru_search` | Execute a raw CQL query |
-| `sru_search_books` | Search by title, author, ISBN, subject, publisher, year, or keyword |
 
-### Example Usage
+## Example Usage
 
 Search the Library of Congress for books by Melville:
 
