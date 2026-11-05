@@ -1,6 +1,8 @@
-# sru-mcp
+# reader-sru
 
-An MCP server that searches library catalogs worldwide using the [SRU (Search/Retrieve via URL)](https://www.loc.gov/standards/sru/) protocol. No API keys required — SRU is an open standard supported by national libraries, university catalogs, and consortia.
+This is an MCP (Model Context Protocol) server used to search the Distant Reader catalog via the [SRU (Search/Retrieve via URL)](https://www.loc.gov/standards/sru/) protocol. With this server and your favorite agent software (ollmcp, Claude, ChatGPT, etc.) you can use natural langauge commands to query the Reader's catalog, and have the results interpreted by the agent. Once you identify items of interest, you can then save a CSV (comma-separated values) file which includes rudimentary bibliographics and URLs pointing to where the items can be downloaded. The CSV file is useful because you will probably want to curate the file (normalizing names, removing duplicates, adding dates, etc.) before actually downloading items.
+
+There is a Web-based interface to the Reader's catalog ([http://index.distantreader.org](http://index.distantreader.org)), but in the long run, this MCP server is more functional than the Web-based interface.
 
 ## Features
 
