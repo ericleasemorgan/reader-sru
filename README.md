@@ -1,17 +1,28 @@
 # reader-sru
 
-This is an MCP (Model Context Protocol) server used to search the Distant Reader catalog via the [SRU (Search/Retrieve via URL)](https://www.loc.gov/standards/sru/) protocol. With this server and your favorite agent software (ollmcp, Claude, ChatGPT, etc.) you can use natural langauge commands to query the Reader's catalog, and have the results interpreted by the agent. Once you identify items of interest, you can then save a CSV (comma-separated values) file which includes rudimentary bibliographics and URLs pointing to where the items can be downloaded. The CSV file is useful because you will probably want to curate the file (normalizing names, removing duplicates, adding dates, etc.) before actually downloading items.
+This is an [MCP](https://modelcontextprotocol.io/docs/2026-07-28/getting-started/intro) (Model Context Protocol) server used to search the [Distant Reader catalog](http://catalog.distantreader.org) via the [SRU (Search/Retrieve via URL)](https://www.loc.gov/standards/sru/) protocol.
 
-There is a Web-based interface to the Reader's catalog ([http://index.distantreader.org](http://index.distantreader.org)), but in the long run, this MCP server is more functional than the Web-based interface.
+With this server and your favorite agent software (ollmcp, Claude, ChatGPT, etc.) you can use natural langauge commands to query the Reader's catalog, and have the results interpreted by the agent. Once you identify items of interest, you can then save a CSV (comma-separated values) file which includes rudimentary bibliographics and URLs pointing to where the items can be downloaded. The CSV file is useful because you will probably want to curate the file (normalize names, remove duplicates, add dates, etc.) before actually downloading items.
+
+There is a [Web-based interface to the SRU interface](http://index.distantreader.org), but in the long run, this MCP server is more functional.
 
 
 ## Install
 
-First download the distribution, change directories to the distribution's root, and install the requirements:
+Download the distribution, change directories to the distribution's root, and install the requirements:
 
 ```bash
 pip install -r requirements.txt
 ```
+
+You then ought to be able to run the server:
+
+```bash
+python server.py
+```
+
+If zero errors are output, then it is probably working. Ironicaly, if zero errors are output, then nothing else will be output either because the server is waiting for MCP commands. Just press ^C and assume all is well.
+
 
 ## Using the server
 
@@ -39,55 +50,15 @@ Many people use Claude as their agent. If you do too, then open your Claude desk
 
 ## Example Usage
 
-Search the Library of Congress for books by Melville:
+After you have integrated the server into your agent you ought to be able to submit commands. Here are four:
 
-```
-sru_search_books(server="loc", author="Melville", title="Moby Dick")
-```
+1. Throughly explain the Reader Index, and use the word "astrology" as an example. - This will load bunches o' configurations, query the remote server for functionality, and search for records on the topic of astrology.
 
-Search the French national library with a raw CQL query:
+2. Find items about Lancaster. Get a single records. Evaluate the facets. - This will do just what the command states. Pay attention to the facet evaluation beause it will give you hints on how to improve your searches. Very useful.
 
-```
-sru_search(server="bnf", cql_query='dc.title = "Les Misérables"')
-```
+3. Get the first twelve items from the search results, and save them as a CSV file. - Again, this will do exactly what the command states, and the resulting CSV file will be a rudimentary bibliography, plus URLs, that you can use for any number of things later.
 
-## Pre-configured Servers
+4. From the twelve records, create a rudimentary bibliography in the Chicago style. - This command ought to output a more formal bibliography.
 
-| ID | Name | Notes |
-|----|------|-------|
-| `loc` | Library of Congress | US national catalog |
-| `loc-names` | LC Name Authority | Personal and corporate names |
-| `loc-subjects` | LC Subject Authority | Subject headings and genre terms |
-| `bnf` | Bibliothèque nationale de France | French national library |
-| `dnb` | Deutsche Nationalbibliothek | German national library |
-| `kb` | Koninklijke Bibliotheek | Netherlands national library |
-| `bibsys` | BIBSYS | Norwegian academic libraries |
+Fun!?
 
-To add a server, edit `servers.json`.
-
-## Development
-
-```bash
-# Install dev dependencies
-pip install pytest pytest-asyncio respx
-
-# Run tests
-python3 -m pytest test_sru.py test_server.py -v
-
-# Test with MCP Inspector
-npx @modelcontextprotocol/inspector python server.py
-```
-
-## Project Structure
-
-```
-server.py       FastMCP server — tool definitions
-sru.py          SRU protocol client — HTTP, parsing, formatting
-servers.json    Server registry
-test_sru.py     Tests for sru.py (92 tests total)
-test_server.py  Tests for server.py
-```
-
-## License
-
-MIT
