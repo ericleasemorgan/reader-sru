@@ -52,17 +52,17 @@ Many people use Claude as their agent. If you do too, then open your Claude desk
 
 After you have integrated the server into your agent you ought to be able to submit commands. Here are six:
 
-1. Throughly explain the Reader Index, and use the word "astrology" as an example. - This will load bunches o' configurations, query the remote server for functionality, and search for records on the topic of astrology.
+1. _Throughly explain the Reader Index, and use the word "astrology" as an example._ - This will load bunches o' configurations, query the remote server for functionality, and search for records on the topic of astrology.
 
-2. Find items about Lancaster. Get a single record. Evaluate the facets. - This will do just what the command states. Pay attention to the facet evaluation beause it will give you hints on how to improve your searches. Very useful.
+2. _Find items about Lancaster. Get a single record. Evaluate the facets._ - This will do just what the command states. Pay attention to the facet evaluation beause it will give you hints on how to improve your searches. Very useful.
 
-3. Get the first twelve items from the search results. - This will retrieve the bibliographics of the first twelve items and do some analysis against them. It would be nice if traditional library catalogs would do the same.
+3. _Get the first twelve items from the search results._ - This will retrieve the bibliographics of the first twelve items and do some analysis against them. It would be nice if traditional library catalogs would do the same.
 
-4. Get the first twelve items from the search results, and save them as a CSV file. - Again, this will do exactly what the command states, and the resulting CSV file will be a rudimentary bibliography, plus URLs, that you can use for any number of things.
+4. _Get the first twelve items from the search results, and save them as a CSV file._ - Again, this will do exactly what the command states, and the resulting CSV file will be a rudimentary bibliography, plus URLs, that you can use for any number of things.
 
-5. From the twelve records, create a rudimentary bibliography in the Chicago style. - This command ought to output a more formal bibliography.
+5. _From the twelve records, create a rudimentary bibliography in the Chicago style._ - This command ought to output a more formal bibliography.
 
-6. Get the full text of item #12 and summarize it. - This will download item #12, feed it to the LLM, and you ought to get back some sort of analysis. 
+6. _Get the full text of item #12 and summarize it._ - This will download item #12, feed it to the LLM, and you ought to get back some sort of analysis. 
 
 
 ## Attribution
