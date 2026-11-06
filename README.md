@@ -65,3 +65,18 @@ After you have integrated the server into your agent you ought to be able to sub
 6. Get the full text of item #12 and summarize it. - This will download item #12, feed it to the LLM, and you ought to get back some sort of analysis. 
 
 
+## Attribution
+
+This software is rooted in the good work of Sam Codefzer who wrote [sru-mcp](https://github.com/codefzer/sru-mcp), but I only needed/wanted to create a server to match the specific functionality of the Reader's catalog. "Thank you, Sam!"
+
+
+## License
+
+This software is distributed under a GNU Public License, but I'd be happy to change that because it is rooted in software distributed under an MIT license.
+
+<hr />
+
+<p style='text-align: right'>
+Eric Lease Morgan &lt;eric_morgan@infomotions.com&gt;<br />
+November 5, 2026
+</p>
