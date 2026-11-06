@@ -76,7 +76,5 @@ This software is distributed under a GNU Public License, but I'd be happy to cha
 
 <hr />
 
-<p style='text-align: right'>
 Eric Lease Morgan &lt;eric_morgan@infomotions.com&gt;<br />
 November 5, 2026
-</p>
