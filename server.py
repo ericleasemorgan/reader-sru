@@ -15,7 +15,6 @@
 # require
 from json                 import dump, load
 from mcp.server.mcpserver import MCPServer
-from pandas               import DataFrame
 from pathlib              import Path
 from pydantic             import Field, BaseModel
 from requests             import get
